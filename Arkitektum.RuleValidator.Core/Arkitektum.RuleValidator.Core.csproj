@@ -6,6 +6,7 @@
     <Authors>Arkitektum</Authors>
     <Description>Hjelpemetoder og utvidelser til Arkitektum.RuleValidator</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/Arkitektum/RuleValidator.Core</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
