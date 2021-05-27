@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Arkitektum.RuleValidator.Models;
+using System;
 using System.Collections.Generic;
 
 namespace Arkitektum.RuleValidator.Core.Models.RuleOutput
@@ -6,6 +7,7 @@ namespace Arkitektum.RuleValidator.Core.Models.RuleOutput
     public class RuleOutputConfig
     {
         public List<GroupOptions> Groups { get; set; } = new();
+        public List<Type> Ignores { get; set; } = new();
     }
 
     public class RuleOutputConfigBuilder
@@ -28,6 +30,16 @@ namespace Arkitektum.RuleValidator.Core.Models.RuleOutput
             group.Name = name;
 
             Config.Groups.Add(group);
+            return this;
+        }
+
+        public RuleOutputConfigBuilder Ignore<T>() where T : Rule
+        {
+            var type = typeof(T);
+
+            if (!Config.Ignores.Contains(type))
+                Config.Ignores.Add(type);
+
             return this;
         }
 

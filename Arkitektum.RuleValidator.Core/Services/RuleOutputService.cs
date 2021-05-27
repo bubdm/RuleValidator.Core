@@ -28,13 +28,15 @@ namespace Arkitektum.RuleValidator.Core.Services
 
             var outputConfig = _ruleOutputOptions.OutputConfig;
 
-            if (_ruleOutputOptions == null)
+            if (outputConfig == null)
             {
                 return new List<RuleSet>
                 {
                     new RuleSet(_validationRulesName, allRules.Select(rule => new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation)))
                 };
             }
+
+            allRules.RemoveAll(rule => !outputConfig.Ignores.Contains(rule.GetType()));
 
             var ruleGroupings = GetRuleGroupings(allRules);
             var ruleSetsArray = new RuleSet[ruleGroupings.Count];
