@@ -36,8 +36,6 @@ namespace Arkitektum.RuleValidator.Core.Services
                 };
             }
 
-            allRules.RemoveAll(rule => !outputConfig.Ignores.Contains(rule.GetType()));
-
             var ruleGroupings = GetRuleGroupings(allRules);
             var ruleSetsArray = new RuleSet[ruleGroupings.Count];
             var unmappedRules = new List<RuleInfo>();
@@ -162,9 +160,11 @@ namespace Arkitektum.RuleValidator.Core.Services
 
         private List<Rule> LoadRules()
         {
+            var ignoredRules = _ruleOutputOptions.OutputConfig?.Ignores ?? new List<Type>();
+
             return _ruleOutputOptions.Assemblies
                 .SelectMany(assembly => assembly.GetTypes())
-                .Where(type => type.IsSubclassOf(typeof(Rule)) && type.GetConstructor(Type.EmptyTypes) != null)
+                .Where(type => type.IsSubclassOf(typeof(Rule)) && type.GetConstructor(Type.EmptyTypes) != null && !ignoredRules.Contains(type))
                 .Select(type =>
                 {
                     var rule = Activator.CreateInstance(type) as Rule;
