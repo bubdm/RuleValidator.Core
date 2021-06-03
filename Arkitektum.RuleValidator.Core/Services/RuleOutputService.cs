@@ -1,5 +1,6 @@
 ﻿using Arkitektum.RuleValidator.Core.Models.RuleOutput;
 using Arkitektum.RuleValidator.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -9,18 +10,24 @@ namespace Arkitektum.RuleValidator.Core.Services
 {
     public class RuleOutputService : IRuleOutputService
     {
-        private readonly static string _undefinedGroupName = "Ikke definert";
         private readonly static string _validationRulesName = "Valideringsregler";
+        private readonly static Dictionary<string, List<RuleSet>> _allRuleSets = new();
         private readonly RuleOutputSettings _settings;
+        private readonly ILogger<RuleOutputService> _logger;
 
         public RuleOutputService(
-            IOptions<RuleOutputSettings> options)
+            IOptions<RuleOutputSettings> options,
+            ILogger<RuleOutputService> logger)
         {
             _settings = options.Value;
+            _logger = logger;
         }
 
         public List<RuleSet> GetRuleSets(object key)
         {
+            if (_allRuleSets.ContainsKey(key.ToString()))
+                return _allRuleSets[key.ToString()];
+
             var settings = _settings.GetSettings(key);
 
             if (settings == null)
@@ -35,46 +42,15 @@ namespace Arkitektum.RuleValidator.Core.Services
 
             if (outputConfig == null)
             {
-                return new List<RuleSet>
-                {
-                    new RuleSet(_validationRulesName, allRules.Select(rule => new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation)))
-                };
+                var ruleInfos = allRules.Select(rule => new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation));
+                var noConfigRuleSets = new List<RuleSet> { new RuleSet(_validationRulesName, ruleInfos) };
+
+                _allRuleSets.Add(key.ToString(), noConfigRuleSets);
+                return noConfigRuleSets;
             }
 
-            var ruleGroupings = GetRuleGroupings(allRules, settings);
-            var ruleSetsArray = new RuleSet[ruleGroupings.Count];
-            var unmappedRules = new List<RuleInfo>();
-
-            foreach (var (groupName, rules) in ruleGroupings)
-            {
-                var groupIndex = outputConfig.Groups.FindIndex(groupOptions => groupOptions.Name == groupName);
-
-                if (groupIndex != -1)
-                {
-                    var ruleInfos = new RuleInfo[rules.Count];
-
-                    foreach (var rule in rules)
-                    {
-                        var ruleIndex = outputConfig.Groups[groupIndex].Rules
-                            .FindIndex(ruleOptions => ruleOptions.Type == rule.GetType());
-
-                        if (ruleIndex != -1)
-                        {
-                            ruleInfos[ruleIndex] = new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation);
-                        }
-                    }
-
-                    ruleSetsArray[groupIndex] = new RuleSet(groupName, ruleInfos.Where(ruleInfo => ruleInfo != null));
-                }
-            }
-
-            var ruleSets = new List<RuleSet>(ruleSetsArray.Where(ruleSet => ruleSet != null));
-
-            if (ruleGroupings.TryGetValue(_undefinedGroupName, out var undefinedRules))
-            {
-                var ruleInfos = undefinedRules.Select(rule => new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation));
-                ruleSets.Add(new RuleSet(_undefinedGroupName, ruleInfos));
-            }
+            var ruleSets = GetRuleSets(allRules, settings);
+            _allRuleSets.Add(key.ToString(), ruleSets);
 
             return ruleSets;
         }
@@ -117,20 +93,60 @@ namespace Arkitektum.RuleValidator.Core.Services
             return rules.Where(rule => HasUILocation(rule.GetType(), uiLocation, settings));
         }
 
-        private static Dictionary<string, List<Rule>> GetRuleGroupings(List<Rule> rules, RuleOutputOptions options)
+        private List<RuleSet> GetRuleSets(List<Rule> rules, RuleOutputOptions settings)
+        {
+            var ruleGroupings = GetRuleGroupings(rules, settings);
+            var ruleSetsArray = new RuleSet[ruleGroupings.Count];
+            var unmappedRules = new List<RuleInfo>();
+
+            foreach (var (groupName, groupRules) in ruleGroupings)
+            {
+                var groupIndex = settings.OutputConfig.Groups.FindIndex(groupOptions => groupOptions.Name == groupName);
+
+                if (groupIndex != -1)
+                {
+                    var rulesInGroup = settings.OutputConfig.Groups[groupIndex].Rules;
+                    var ruleInfos = new RuleInfo[rulesInGroup.Count];
+
+                    foreach (var rule in groupRules)
+                    {
+                        var ruleIndex = rulesInGroup
+                            .FindIndex(ruleOptions => ruleOptions.Type == rule.GetType());
+
+                        if (ruleIndex != -1)
+                            ruleInfos[ruleIndex] = new RuleInfo(rule.Id, rule.Name, rule.Description, rule.MessageType.ToString(), rule.Documentation);
+                    }
+
+                    ruleSetsArray[groupIndex] = new RuleSet(groupName, ruleInfos.Where(ruleInfo => ruleInfo != null));
+                }
+            }
+
+            return new List<RuleSet>(ruleSetsArray.Where(ruleSet => ruleSet != null));
+        }
+
+        private Dictionary<string, List<Rule>> GetRuleGroupings(List<Rule> rules, RuleOutputOptions options)
         {
             var ruleGroupings = new Dictionary<string, List<Rule>>();
+            var notGrouped = new List<string>();
 
             foreach (var rule in rules)
             {
                 var groupOptions = FindGroupOptions(rule.GetType(), options);
-                var groupName = groupOptions?.Name ?? _undefinedGroupName;
 
-                if (!ruleGroupings.ContainsKey(groupName))
-                    ruleGroupings.Add(groupName, new List<Rule> { rule });
+                if (groupOptions == null)
+                {
+                    notGrouped.Add($"{rule.Id}: {rule.GetType().Name}");
+                    continue;
+                }
+
+                if (!ruleGroupings.ContainsKey(groupOptions.Name))
+                    ruleGroupings.Add(groupOptions.Name, new List<Rule> { rule });
                 else
-                    ruleGroupings[groupName].Add(rule);
+                    ruleGroupings[groupOptions.Name].Add(rule);
             }
+
+            if (notGrouped.Any())
+                _logger.LogWarning($"RuleOutputConfiguration for '{options.Key}': Følgende regler er ikke tilknyttet en gruppe:{Environment.NewLine}{string.Join(Environment.NewLine, notGrouped)}");
 
             return ruleGroupings;
         }

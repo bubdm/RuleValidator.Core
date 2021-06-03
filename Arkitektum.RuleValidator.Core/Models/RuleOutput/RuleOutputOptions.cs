@@ -13,6 +13,8 @@ namespace Arkitektum.RuleValidator.Core.Models.RuleOutput
             var ruleOutputOptions = new RuleOutputOptions();
             options.Invoke(ruleOutputOptions);
 
+            ruleOutputOptions.Key = key.ToString();
+
             if (!_settings.ContainsKey(key.ToString()))
                 _settings.Add(key.ToString(), ruleOutputOptions);
         }
@@ -25,6 +27,7 @@ namespace Arkitektum.RuleValidator.Core.Models.RuleOutput
 
     public class RuleOutputOptions
     {
+        public string Key { get; set; }
         public RuleOutputConfig OutputConfig { get; set; }
         public List<Assembly> Assemblies { get; } = new List<Assembly>();
 
