@@ -10,7 +10,7 @@ namespace Arkitektum.RuleValidator.Core.Extensions
 {
     public static class XPath2Extensions
     {
-        private static readonly Regex _namespaceRegex = new(@"(\w+):\w+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex _namespaceRegex = new(@"(?<prefix>\w+):(\w+|\*)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         private static readonly Dictionary<string, XNamespace> _namespaces = new()
         {            
@@ -173,7 +173,7 @@ namespace Arkitektum.RuleValidator.Core.Extensions
 
             foreach (Match match in _namespaceRegex.Matches(xPath))
             {
-                var prefix = match.Groups[1].Value;
+                var prefix = match.Groups["prefix"].Value;
 
                 if (_namespaces.TryGetValue(prefix, out var xNamespace))
                     namespaceManager.AddNamespace(prefix, xNamespace.NamespaceName);

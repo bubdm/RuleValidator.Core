@@ -11,22 +11,27 @@ namespace Arkitektum.RuleValidator.Core.Services
     {
         private readonly static string _undefinedGroupName = "Ikke definert";
         private readonly static string _validationRulesName = "Valideringsregler";
-        private readonly RuleOutputOptions _ruleOutputOptions;
+        private readonly RuleOutputSettings _settings;
 
         public RuleOutputService(
-            IOptions<RuleOutputOptions> ruleOutputOptions)
+            IOptions<RuleOutputSettings> options)
         {
-            _ruleOutputOptions = ruleOutputOptions.Value;
+            _settings = options.Value;
         }
 
-        public List<RuleSet> GetRuleSets()
+        public List<RuleSet> GetRuleSets(object key)
         {
-            var allRules = LoadRules();
+            var settings = _settings.GetSettings(key);
+
+            if (settings == null)
+                return new List<RuleSet>();
+
+            var allRules = LoadRules(settings);
 
             if (!allRules.Any())
                 return new List<RuleSet>();
 
-            var outputConfig = _ruleOutputOptions.OutputConfig;
+            var outputConfig = settings.OutputConfig;
 
             if (outputConfig == null)
             {
@@ -36,7 +41,7 @@ namespace Arkitektum.RuleValidator.Core.Services
                 };
             }
 
-            var ruleGroupings = GetRuleGroupings(allRules);
+            var ruleGroupings = GetRuleGroupings(allRules, settings);
             var ruleSetsArray = new RuleSet[ruleGroupings.Count];
             var unmappedRules = new List<RuleInfo>();
 
@@ -74,9 +79,9 @@ namespace Arkitektum.RuleValidator.Core.Services
             return ruleSets;
         }
 
-        public List<Rule> OrderRules(List<Rule> rules)
+        public List<Rule> OrderRules(object key, List<Rule> rules)
         {
-            var outputConfig = _ruleOutputOptions.OutputConfig;
+            var outputConfig = _settings.GetSettings(key)?.OutputConfig;
 
             if (outputConfig == null)
                 return rules;
@@ -102,23 +107,23 @@ namespace Arkitektum.RuleValidator.Core.Services
             return orderedRules;
         }
 
-        public IEnumerable<Rule> GetRulesByUILocation(IEnumerable<Rule> rules, string uiLocation)
+        public IEnumerable<Rule> GetRulesByUILocation(object key, IEnumerable<Rule> rules, string uiLocation)
         {
-            var outputConfig = _ruleOutputOptions.OutputConfig;
+            var settings = _settings.GetSettings(key);
 
-            if (outputConfig == null)
+            if (settings.OutputConfig == null)
                 return new List<Rule>();
 
-            return rules.Where(rule => HasUILocation(rule.GetType(), uiLocation));
+            return rules.Where(rule => HasUILocation(rule.GetType(), uiLocation, settings));
         }
 
-        private Dictionary<string, List<Rule>> GetRuleGroupings(List<Rule> rules)
+        private static Dictionary<string, List<Rule>> GetRuleGroupings(List<Rule> rules, RuleOutputOptions options)
         {
             var ruleGroupings = new Dictionary<string, List<Rule>>();
 
             foreach (var rule in rules)
             {
-                var groupOptions = FindGroupOptions(rule.GetType());
+                var groupOptions = FindGroupOptions(rule.GetType(), options);
                 var groupName = groupOptions?.Name ?? _undefinedGroupName;
 
                 if (!ruleGroupings.ContainsKey(groupName))
@@ -130,9 +135,9 @@ namespace Arkitektum.RuleValidator.Core.Services
             return ruleGroupings;
         }
 
-        private GroupOptions FindGroupOptions(Type type)
+        private static GroupOptions FindGroupOptions(Type type, RuleOutputOptions options)
         {
-            foreach (var groupOptions in _ruleOutputOptions.OutputConfig.Groups)
+            foreach (var groupOptions in options.OutputConfig.Groups)
             {
                 foreach (var ruleOptions in groupOptions.Rules)
                 {
@@ -144,9 +149,9 @@ namespace Arkitektum.RuleValidator.Core.Services
             return null;
         }
 
-        private bool HasUILocation(Type type, string uiLocation)
+        private static bool HasUILocation(Type type, string uiLocation, RuleOutputOptions options)
         {
-            foreach (var groupOptions in _ruleOutputOptions.OutputConfig.Groups)
+            foreach (var groupOptions in options.OutputConfig.Groups)
             {
                 foreach (var ruleOptions in groupOptions.Rules)
                 {
@@ -158,11 +163,11 @@ namespace Arkitektum.RuleValidator.Core.Services
             return false;
         }
 
-        private List<Rule> LoadRules()
+        private static List<Rule> LoadRules(RuleOutputOptions options)
         {
-            var ignoredRules = _ruleOutputOptions.OutputConfig?.Ignores ?? new List<Type>();
+            var ignoredRules = options.OutputConfig?.Ignores ?? new List<Type>();
 
-            return _ruleOutputOptions.Assemblies
+            return options.Assemblies
                 .SelectMany(assembly => assembly.GetTypes())
                 .Where(type => type.IsSubclassOf(typeof(Rule)) && type.GetConstructor(Type.EmptyTypes) != null && !ignoredRules.Contains(type))
                 .Select(type =>

@@ -6,9 +6,9 @@ namespace Arkitektum.RuleValidator.Core.Services
 {
     public static class RuleOutputConfiguration
     {
-        public static void ConfigureRuleOutput(this IServiceCollection services, Action<RuleOutputOptions> options)
+        public static void ConfigureRuleOutput(this IServiceCollection services, Action<RuleOutputSettings> settings)
         {
-            services.Configure(options);
+            services.Configure(settings);
             services.AddTransient<IRuleOutputService, RuleOutputService>();
         }
     }
