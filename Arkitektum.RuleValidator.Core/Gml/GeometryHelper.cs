@@ -1,6 +1,7 @@
 ﻿using Arkitektum.RuleValidator.Core.Exceptions;
 using Arkitektum.RuleValidator.Core.Extensions;
 using Arkitektum.RuleValidator.Core.Models;
+using DiBK.RuleValidator.Extensions.Xml;
 using OSGeo.OGR;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SpatialReference = OSGeo.OSR.SpatialReference;
 
-namespace Arkitektum.RuleValidator.Core.Helpers
+namespace DiBK.RuleValidator.Extensions.Gml
 {
     public class GeometryHelper
     {

@@ -1,9 +1,10 @@
 ﻿using Arkitektum.RuleValidator.Core.Extensions;
 using Arkitektum.RuleValidator.Core.Models;
+using DiBK.RuleValidator.Extensions.Xml;
 using System;
 using System.Xml.Linq;
 
-namespace Arkitektum.RuleValidator.Core.Helpers
+namespace DiBK.RuleValidator.Extensions.Gml
 {
     public class GmlHelper
     {

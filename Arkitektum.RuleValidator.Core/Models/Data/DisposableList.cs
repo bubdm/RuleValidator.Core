@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Arkitektum.RuleValidator.Core.Models
+namespace DiBK.RuleValidator.Extensions
 {
     public class DisposableList<T> : IList<T>, IDisposable where T : IDisposable
     {
