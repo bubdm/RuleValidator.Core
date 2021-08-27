@@ -1,6 +1,6 @@
-﻿using Arkitektum.RuleValidator.Core.Models.RuleOutput;
-using Arkitektum.RuleValidator.Models;
+﻿using Arkitektum.RuleValidator.Models;
 using System.Collections.Generic;
+using RuleSet = Arkitektum.RuleValidator.Core.Models.RuleOutput.RuleSet;
 
 namespace Arkitektum.RuleValidator.Core.Services
 {

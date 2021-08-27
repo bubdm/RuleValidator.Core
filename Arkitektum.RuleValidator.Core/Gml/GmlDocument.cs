@@ -1,12 +1,11 @@
-﻿using Arkitektum.RuleValidator.Core.Extensions;
-using Arkitektum.RuleValidator.Core.Helpers;
+﻿using DiBK.RuleValidator.Extensions.Xml;
 using OSGeo.OGR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
 
-namespace Arkitektum.RuleValidator.Core.Models
+namespace DiBK.RuleValidator.Extensions.Gml
 {
     public class GmlDocument : ValidationDataElement<XDocument>, IDisposable
     {

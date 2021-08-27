@@ -5,6 +5,9 @@ using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GroupOptions = Arkitektum.RuleValidator.Core.Models.RuleOutput.GroupOptions;
+using RuleInfo = Arkitektum.RuleValidator.Core.Models.RuleOutput.RuleInfo;
+using RuleSet = Arkitektum.RuleValidator.Core.Models.RuleOutput.RuleSet;
 
 namespace Arkitektum.RuleValidator.Core.Services
 {
@@ -93,6 +96,20 @@ namespace Arkitektum.RuleValidator.Core.Services
             return rules.Where(rule => HasUILocation(rule.GetType(), uiLocation, settings));
         }
 
+        private static bool HasUILocation(Type type, string uiLocation, RuleOutputOptions options)
+        {
+            foreach (var groupOptions in options.OutputConfig.Groups)
+            {
+                foreach (var ruleOptions in groupOptions.Rules)
+                {
+                    if (ruleOptions.Type == type)
+                        return ruleOptions.UILocation == uiLocation || groupOptions.UILocation == uiLocation;
+                }
+            }
+
+            return false;
+        }
+
         private List<RuleSet> GetRuleSets(List<Rule> rules, RuleOutputOptions settings)
         {
             var ruleGroupings = GetRuleGroupings(rules, settings);
@@ -163,20 +180,6 @@ namespace Arkitektum.RuleValidator.Core.Services
             }
 
             return null;
-        }
-
-        private static bool HasUILocation(Type type, string uiLocation, RuleOutputOptions options)
-        {
-            foreach (var groupOptions in options.OutputConfig.Groups)
-            {
-                foreach (var ruleOptions in groupOptions.Rules)
-                {
-                    if (ruleOptions.Type == type)
-                        return ruleOptions.UILocation == uiLocation || groupOptions.UILocation == uiLocation;
-                }
-            }
-
-            return false;
         }
 
         private static List<Rule> LoadRules(RuleOutputOptions options)
