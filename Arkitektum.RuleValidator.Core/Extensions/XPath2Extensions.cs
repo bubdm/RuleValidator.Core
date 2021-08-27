@@ -6,7 +6,7 @@ using System.Xml;
 using System.Xml.Linq;
 using Wmhelp.XPath2;
 
-namespace DiBK.RuleValidator.Extensions.Xml
+namespace Arkitektum.RuleValidator.Core.Extensions
 {
     public static class XPath2Extensions
     {
@@ -129,9 +129,9 @@ namespace DiBK.RuleValidator.Extensions.Xml
             return node.XPath2SelectElements(xPath, GetNamespaces(xPath)).Any();
         }
 
-        public static string GetXPath(this XElement element, bool namespaces = true)
+        public static string GetXPath(this XElement element)
         {
-            var path = "/" + (namespaces ? element.Name : element.Name.LocalName);
+            var path = "/" + element.Name.LocalName;
             var parentElement = element.Parent;
 
             if (parentElement != null)
@@ -157,7 +157,7 @@ namespace DiBK.RuleValidator.Extensions.Xml
                     path += "[1]";
                 }
 
-                path = parentElement.GetXPath(namespaces) + path;
+                path = parentElement.GetXPath() + path;
             }
             else
             {

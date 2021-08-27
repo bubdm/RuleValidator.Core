@@ -1,7 +1,7 @@
 ﻿using OSGeo.OGR;
 using System;
 
-namespace DiBK.RuleValidator.Extensions.Gml
+namespace Arkitektum.RuleValidator.Core.Models
 {
     public class IndexedGeometry : IDisposable
     {
@@ -18,16 +18,8 @@ namespace DiBK.RuleValidator.Extensions.Gml
 
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposing || Geometry == null)
-                return;
-
-            Geometry.Dispose();
+            if (Geometry != null)
+                Geometry.Dispose();
         }
     }
 }
